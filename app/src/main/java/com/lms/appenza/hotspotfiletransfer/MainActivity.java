@@ -42,11 +42,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         progress= new ProgressDialog(this);
         manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-
     }
-
-
 
     public void send(View view) {
 
@@ -70,18 +66,20 @@ public class MainActivity extends AppCompatActivity {
             uri = data.getData();
             Log.d(LOG_TAG, "Uri: " + uri.toString()) ;
             startActivity(new Intent(this, StudentList.class));
-
         }
     }
 
-
-    public void recieve(View view) {
-        setWifiApEnabled(null, true);
+    public void receive(View view) {
+        WifiConfiguration netConfig = new WifiConfiguration();
+        netConfig.SSID = "Test";
+        Log.d(LOG_TAG,netConfig.SSID+ "--- this is SSID");
+        netConfig.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
+        setWifiApEnabled(netConfig, true);
+        
         progress.setMessage("Receiving...");
         progress.show();
         new FileServerTask().execute();
     }
-
 
     private boolean setWifiApEnabled(WifiConfiguration wifiConfig, boolean enabled) {
         try {
@@ -96,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     private class FileServerTask extends AsyncTask<Void, Void, File> {
 
         public static final String LOG_TAG = "HOTSPOTMM server";
@@ -108,11 +105,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(LOG_TAG, "Server: socket opened");
                 Socket client = serverSocket.accept();
                 Log.d(LOG_TAG, "Server: connection accepted");
-
                 InputStream inputStream = client.getInputStream();
                 DataInputStream dis = new DataInputStream(inputStream);
                 String fname = dis.readUTF();
-
                 File file = new File(Environment.getExternalStorageDirectory() + "/HotspotSharedFiles/" + fname);
                 File dirs = new File(file.getParent());
                 if (!dirs.exists())
@@ -123,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(LOG_TAG, "file not created");
 
                 FileOutputStream outputStream = new FileOutputStream(file);
-
 
                 if(copyFile(inputStream, outputStream)) {
                     Log.d(LOG_TAG, "File received");

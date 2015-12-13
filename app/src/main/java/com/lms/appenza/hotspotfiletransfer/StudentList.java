@@ -10,10 +10,9 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -28,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class StudentList extends AppCompatActivity {
 
@@ -39,6 +39,9 @@ public class StudentList extends AppCompatActivity {
     StudentAdapter onlineAdapter, offlineAdapter;
     ListView onlineList, offlineList;
     WifiConfiguration conf ;
+    ArrayList<String> checkedMacAddress;
+    StudentItem student;
+    Boolean sentFile;
 
 
     @Override
@@ -46,13 +49,15 @@ public class StudentList extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_student_list);
 
-        json.put("tmp", "eg:gg:df:gd");
+        json.put("lenovo Small", "16:36:c6:a8:45:87");
         json.put("huawei", "58:2a:f7:a9:7f:20");
-        json.put("lenovo", "ee:89:f5:3c:f7:3c");
+        json.put("lenovo Large", "ee:89:f5:3c:f7:3c");
 
         manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
         scanResults = new ArrayList<ScanResult>();
         conf = new WifiConfiguration();
+        checkedMacAddress = new ArrayList<String>();
         registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -89,12 +94,13 @@ public class StudentList extends AppCompatActivity {
         if(!manager.isWifiEnabled())
             manager.setWifiEnabled(true);
 
+        onlineAdapter.clear();
+        offlineAdapter.clear();
+
         manager.startScan();
 
         Log.d(LOG_TAG, "size ============= " + scanResults.size());
 
-        onlineAdapter.clear();
-        offlineAdapter.clear();
 
         boolean f;
 
@@ -104,7 +110,7 @@ public class StudentList extends AppCompatActivity {
             for (int j = 0; j < scanResults.size(); j++) {
                 Log.d(LOG_TAG, scanResults.get(j).SSID + " : " + scanResults.get(j).BSSID);
                 if(studentMAC.equals(scanResults.get(j).BSSID)) {
-                    onlineAdapter.add(new StudentItem(entry.getKey(), entry.getValue(), false));
+                    onlineAdapter.add(new StudentItem(entry.getKey(),entry.getValue() ,false));
                     f = true;
                     break;
                 }
@@ -119,7 +125,6 @@ public class StudentList extends AppCompatActivity {
     }
 
     public void selectAll(View view) {
-        StudentItem student;
         StudentAdapter.ViewHolder holder;
         for (int i= 0; i < onlineList.getCount(); i++) {
             student = onlineAdapter.getItem(i);
@@ -138,14 +143,48 @@ public class StudentList extends AppCompatActivity {
 //            }
 //        }
 
-        for(int i = 0;i<onlineAdapter.getCount();i++){
-            if(onlineAdapter.getItem(i).isChecked()){
-                conf.SSID="\""+onlineAdapter.getItem(i).getSSID()+"\"";
-                conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+            for(int j=0;j<onlineAdapter.getCount();j++) {
+                if(onlineAdapter.getItem(j).isChecked()) {
+                    checkedMacAddress.add(onlineAdapter.getItem(j).getMAC());
+                    Log.d(LOG_TAG, onlineAdapter.getItem(j).getName());
+                }
             }
 
-        }
+            for (int i=0 ;i<onlineAdapter.getCount();i++) {
+                if(checkedMacAddress.contains(onlineAdapter.getItem(i).getMAC())){
+                    Log.d(LOG_TAG, "found a known studnet " + i);
+                    conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
 
+
+                    System.out.print("i.networkId " + scanResults.get(i) + "\n");
+
+
+                    conf.SSID="\""+onlineAdapter.getItem(i)+"\"";
+                    conf.status = WifiConfiguration.Status.ENABLED;
+                    // connect to and enable the connection
+                    int netId = manager.addNetwork(conf);
+                    manager.enableNetwork(netId, true);
+                    Log.d("HOTSPOTMM", String.valueOf(netId));
+                    manager.reconnect();
+                    List<WifiConfiguration> list = manager.getConfiguredNetworks();
+                    for(int m = 0; m< list.size(); m++){
+                        Log.d("HOTSPOTMM", String.valueOf(list.get(m).SSID) + " ----->  " + String.valueOf(list.get(m).networkId));
+
+                    }
+                    sentFile = false;
+                   // while (!sentFile)
+
+                        new ClientTask().execute(MainActivity.uri);
+
+                    manager.setWifiEnabled(true);
+
+//                    while (!sentFile)
+//                        Log.d(LOG_TAG,"Sending");
+                }
+                else
+                    Log.d(LOG_TAG,"student not found");
+
+            }
 
     }
 
@@ -173,8 +212,12 @@ public class StudentList extends AppCompatActivity {
 
                 if(copyFile(inputStream, outputStream)) {
                     Log.d(LOG_TAG, "File copied");
+                    sentFile=true;
                 } else {
                     Log.d(LOG_TAG, "File not copied");
+                    sentFile=true;
+                    Log.d(LOG_TAG, "kamel ya 3am");
+
                 }
 
                 if (inputStream != null) {
@@ -202,6 +245,12 @@ public class StudentList extends AppCompatActivity {
                 return false;
             }
             return true;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+
         }
     }
 }

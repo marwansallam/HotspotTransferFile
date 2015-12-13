@@ -1,21 +1,14 @@
 package com.lms.appenza.hotspotfiletransfer;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.CheckedTextView;
-import android.widget.TextView;
-
 import java.util.List;
-import java.util.zip.Inflater;
 
-/**
- * Created by michael on 08/12/15.
- */
+
 public class StudentAdapter extends ArrayAdapter<StudentItem> {
 
     Context context;
@@ -39,11 +32,9 @@ public class StudentAdapter extends ArrayAdapter<StudentItem> {
 
         if ( convertView == null ) {
             convertView = inflater.inflate(R.layout.list_item, parent, false);
-
             holder = new ViewHolder();
             holder.checkedTextView = (CheckedTextView) convertView.findViewById(R.id.checkedText);
             convertView.setTag(holder);
-
             holder.checkedTextView.setOnClickListener( new View.OnClickListener() {
                 public void onClick(View v) {
                     CheckedTextView cb = (CheckedTextView) v;
@@ -55,16 +46,10 @@ public class StudentAdapter extends ArrayAdapter<StudentItem> {
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
-
         StudentItem student = getItem(position);
-
-//        holder.checkBox.setTag( student );
-//        holder.checkBox.setChecked( student.isChecked() );
-//        holder.textView.setText( student.getName() );
         holder.checkedTextView.setTag(student);
         holder.checkedTextView.setChecked(student.isChecked());
         holder.checkedTextView.setText(student.getName());
-
         return convertView;
     }
 
