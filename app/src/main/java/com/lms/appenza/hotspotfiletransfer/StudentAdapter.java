@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckedTextView;
+
 import java.util.List;
 
 
@@ -20,6 +21,7 @@ public class StudentAdapter extends ArrayAdapter<StudentItem> {
 
     class ViewHolder {
         CheckedTextView checkedTextView;
+
         public CheckedTextView getCheckedTextView() {
             return checkedTextView;
         }
@@ -30,12 +32,12 @@ public class StudentAdapter extends ArrayAdapter<StudentItem> {
         LayoutInflater inflater = LayoutInflater.from(context);
         ViewHolder holder = null;
 
-        if ( convertView == null ) {
+        if (convertView == null) {
             convertView = inflater.inflate(R.layout.list_item, parent, false);
             holder = new ViewHolder();
             holder.checkedTextView = (CheckedTextView) convertView.findViewById(R.id.checkedText);
             convertView.setTag(holder);
-            holder.checkedTextView.setOnClickListener( new View.OnClickListener() {
+            holder.checkedTextView.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     CheckedTextView cb = (CheckedTextView) v;
                     StudentItem student = (StudentItem) cb.getTag();
