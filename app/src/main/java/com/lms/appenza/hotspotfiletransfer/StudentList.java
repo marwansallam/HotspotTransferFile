@@ -1,5 +1,6 @@
 package com.lms.appenza.hotspotfiletransfer;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -34,6 +35,7 @@ import java.util.Map;
 public class StudentList extends AppCompatActivity {
 
     public static final String LOG_TAG = "HOTSPOTMM";
+    public static boolean isSending = true;
 
     ArrayList<String> checkedMacAddress;
     Boolean sentFile,networkConnected =false;
@@ -47,6 +49,7 @@ public class StudentList extends AppCompatActivity {
     WifiManager manager;
     int netId;
     boolean isStudentOnline;
+    ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +66,7 @@ public class StudentList extends AppCompatActivity {
         manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         scanResults = new ArrayList<ScanResult>();
         conf = new WifiConfiguration();
-
+        progressDialog = new ProgressDialog(this);
         checkedMacAddress = new ArrayList<String>();
         registerReceiver(new BroadcastReceiver() {
             @Override
@@ -171,7 +174,7 @@ public class StudentList extends AppCompatActivity {
                         isWifiConnected = true;
                     }
                 }
-                Log.d(LOG_TAG, isWifiConnected + " Connected to " +conf.SSID);
+                Log.d(LOG_TAG, isWifiConnected + " Connected to " + conf.SSID);
 
                 Log.d(LOG_TAG, "--------------------Sending File Started -----------------");
                 if(isWifiConnected)
@@ -181,15 +184,25 @@ public class StudentList extends AppCompatActivity {
                     }
                 Log.d(LOG_TAG, "Sending file to ----- " + currentStudent);
 
+                progressDialog.setMessage("Waiting");
+                progressDialog.show();
+
                 new ClientTask().execute(MainActivity.uri);
 
+//                //wait
+//                int sec = 0;
+//                while(isSending){
+//                    progressDialog.setMessage("Sending To "+currentStudent +" ... " + sec++ );
+//                }
+//                progressDialog.dismiss();
             } else
                 Log.d(LOG_TAG, "Not a Student");
         }
 
     }
 
-    private class ClientTask extends AsyncTask<Uri, Void, Void> {
+     private class ClientTask extends AsyncTask<Uri, Void, Void> {
+        private boolean isConencted = false;
         boolean fileCopied = false;
         Socket socket ;
         int ctr=30;
@@ -198,38 +211,43 @@ public class StudentList extends AppCompatActivity {
             Context context = getApplicationContext();
 
             try {
-                socket = new Socket();
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            try {
+
+                socket = new Socket("192.168.43.1", 8000);
                 Log.d(LOG_TAG, "Client: socket opened");
+                isConencted = true;
+                while (isConencted) {
+                    ContentResolver cr = context.getContentResolver();
+                    InputStream inputStream = cr.openInputStream(params[0]);
+                    OutputStream outputStream = socket.getOutputStream();
+                    DataOutputStream dos = new DataOutputStream(outputStream);
+                    dos.writeUTF(params[0].getLastPathSegment());
 
-                //   socket.bind(null);
-                Log.d(LOG_TAG, "Client: connection requested");
+                    if (sendFile(inputStream, outputStream)) {
+                        Log.d(LOG_TAG, "File Sent to " + currentStudent);
+                        sentFile = true;
+                        fileCopied = true;
+                    } else {
+                        Log.d(LOG_TAG, "File Not Sent to " + currentStudent);
+                        sentFile = true;
+                    }
 
-                Log.d(LOG_TAG, manager.getDhcpInfo().toString());
-                socket.connect(new InetSocketAddress("192.168.43.1", 8000));
-                Log.d(LOG_TAG, "Client: socket connected");
-
-                ContentResolver cr = context.getContentResolver();
-                InputStream inputStream = cr.openInputStream(params[0]);
-                OutputStream outputStream = socket.getOutputStream();
-                DataOutputStream dos = new DataOutputStream(outputStream);
-                dos.writeUTF(params[0].getLastPathSegment());
-
-                if (sendFile(inputStream, outputStream)) {
-                    Log.d(LOG_TAG, "File Sent to " + currentStudent);
-                    sentFile = true;
-                    fileCopied = true;
-                } else {
-                    Log.d(LOG_TAG, "File Not Sent to " + currentStudent);
-                    sentFile = true;
+                    if (inputStream != null)
+                        inputStream.close();
+                    outputStream.close();
+                    socket.close();
+                    isConencted = false;
                 }
 
-                if (inputStream != null)
-                    inputStream.close();
-                outputStream.close();
-                socket.close();
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.toString());
             }
+
             return null;
         }
 
@@ -257,6 +275,7 @@ public class StudentList extends AppCompatActivity {
             else
                 Toast.makeText(StudentList.this, "File Not Sent", Toast.LENGTH_SHORT).show();
             fileCopied=false;
+            isSending=false;
         }
     }
 
