@@ -16,15 +16,27 @@
         android:onClick="send"
         android:id="@+id/button"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_alignLeft="@+id/receiveBtn"
+        android:layout_alignStart="@+id/receiveBtn"
+        android:layout_alignRight="@+id/receiveBtn"
+        android:layout_alignEnd="@+id/receiveBtn" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Receive"
+        android:text="Start Receiving"
         android:onClick="receive"
-        android:id="@+id/button2"
+        android:id="@+id/receiveBtn"
         android:layout_below="@+id/button"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Waiting for Quiz ...."
+        android:id="@+id/waitForQuizTxt"
+        android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
 
 

@@ -12,6 +12,8 @@ import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -28,16 +30,19 @@ public class MainActivity extends AppCompatActivity {
     public static final String LOG_TAG = "HOTSPOTMM";
     public static final int CHOOSE_FILE_REQUEST_CODE = 10;
     public static Uri uri;
-    ProgressDialog progress;
     static WifiManager manager;
     static String studentSSID;
-
+    Button receiveBtn;
+    TextView waitingForQuiz;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         studentSSID = "hStudent";
+        receiveBtn = (Button)findViewById(R.id.receiveBtn);
+        waitingForQuiz = (TextView) findViewById(R.id.waitForQuizTxt);
+        waitingForQuiz.setVisibility(View.INVISIBLE);
     }
 
     public void send(View view) {
@@ -61,14 +66,26 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK && requestCode == CHOOSE_FILE_REQUEST_CODE) {
             uri = data.getData();
             Log.d(LOG_TAG, "Uri: " + uri.toString());
+            Log.d(LOG_TAG, "Uri: " + data.toString());
             startActivity(new Intent(this, StudentList.class));
         }
     }
 
     public void receive(View view) {
-        startActivity(new Intent(this, Receiving.class));
+        Intent intent = new Intent(this, ReceiveFile.class);
 
+        if(!receiveBtn.getText().toString().contains("Stop")) {
+            //startActivity(new Intent(this, Receiving.class));
+            receiveBtn.setText("Stop Receiving");
+            startService(intent);
+            waitingForQuiz.setVisibility(View.VISIBLE);
 
+        }else{
+            waitingForQuiz.setVisibility(View.INVISIBLE);
+
+            stopService(intent);
+            receiveBtn.setText("Start Receiving");
+        }
     }
 
 
