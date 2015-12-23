@@ -41,7 +41,6 @@ public class Receiving extends AppCompatActivity {
         netConfig.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
         setWifiApEnabled(netConfig, true);
         progress = new ProgressDialog(this);
-
         progress.setMessage("Receiving...");
         progress.show();
         new FileServerTask().execute();

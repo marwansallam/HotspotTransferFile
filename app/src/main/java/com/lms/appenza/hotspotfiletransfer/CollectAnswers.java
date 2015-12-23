@@ -28,8 +28,8 @@ import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ReceiveFile extends Service {
-    public ReceiveFile() {
+public class CollectAnswers extends Service {
+    public CollectAnswers() {
     }
     String LOG_TAG = "HOTSPOTMM";
     ProgressDialog progress;
@@ -123,7 +123,7 @@ public class ReceiveFile extends Service {
 //                int splitIndex = s.indexOf("@");
 //                String fileName = s.substring(0,splitIndex);
 
-               // String fileName = dis.readLine();
+                // String fileName = dis.readLine();
                 File file = new File(Environment.getExternalStorageDirectory() + "/HotspotSharedFiles/" + s);
                 Log.d(LOG_TAG,"Filename is : " + s);
                 File dirs = new File(file.getParent());
@@ -184,7 +184,7 @@ public class ReceiveFile extends Service {
             if (f != null) {
                 Log.d(LOG_TAG, this.getStatus().toString() + "---- Stopping Service !!!!!");
                 setWifiApEnabled(null, false);
-                  stopSelf();
+                stopSelf();
 
             }
         }

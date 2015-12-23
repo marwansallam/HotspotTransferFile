@@ -1,9 +1,12 @@
 package com.lms.appenza.hotspotfiletransfer;
 
+import android.app.ProgressDialog;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -14,9 +17,6 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
-
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SendFile extends Service {
+public class Submit extends Service {
     public static final String LOG_TAG = "HOTSPOTMM";
     ArrayList<String> checkedStudents;
     List<ScanResult> scanResults;
@@ -35,11 +35,11 @@ public class SendFile extends Service {
     WifiConfiguration conf;
     int netId;
     Map<String, String> json = new HashMap<>();
-    String currentStudent;
+    String currentTeacher , teacherMacAddress;
     Boolean sentFile,networkConnected =false;
     public static boolean isSending = true;
 
-    public SendFile() {
+    public Submit() {
 
     }
 
@@ -53,13 +53,18 @@ public class SendFile extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
-        manager = StudentList.manager;
-        conf = StudentList.conf;
+        teacherMacAddress = MainActivity.teacherMacAddress;
         json = StudentList.json;
-        checkedStudents = StudentList.checkedMacAddress;
-        scanResults = StudentList.scanResults;
         startSendingFile();
+        manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        scanResults = new ArrayList<ScanResult>();
+        conf = new WifiConfiguration();
+        registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                scanResults = manager.getScanResults();
+            }
+        }, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
     }
 
@@ -72,8 +77,8 @@ public class SendFile extends Service {
 
     public void startSendingFile(){
         for (int i = 0; i < scanResults.size(); i++) {
-            if (checkedStudents.contains(scanResults.get(i).BSSID)) {
-                Log.d(LOG_TAG, "Found Student : " + scanResults.get(i));
+            if (teacherMacAddress.contains(scanResults.get(i).BSSID)) {
+                Log.d(LOG_TAG, "Found Teacher : " + scanResults.get(i));
                 conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
                 conf.SSID = "\"" + scanResults.get(i).SSID + "\"";
                 conf.status = WifiConfiguration.Status.ENABLED;
@@ -96,21 +101,20 @@ public class SendFile extends Service {
                 }
                 Log.d(LOG_TAG, isWifiConnected + " Connected to " + conf.SSID);
 
-                Log.d(LOG_TAG, "--------------------Sending File Started -----------------");
+                Log.d(LOG_TAG, "--------------------Sending Answers Started -----------------");
                 if(isWifiConnected)
                     for(Map.Entry entry: json.entrySet()){
                         if(scanResults.get(i).BSSID.equals(entry.getValue()))
-                            currentStudent=entry.getKey().toString();
+                            currentTeacher=entry.getKey().toString();
                     }
-                Log.d(LOG_TAG, "Sending file to ----- " + currentStudent);
+                Log.d(LOG_TAG, "Sending file to ----- " + currentTeacher);
 
 
                 new ClientTask().execute(MainActivity.uri);
 
             } else
-                Log.d(LOG_TAG, "Not a Student");
+                Log.d(LOG_TAG, "Not a Teacher");
         }
-        stopSelf();
 
     }
 
@@ -124,7 +128,7 @@ public class SendFile extends Service {
             Context context = getApplicationContext();
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -141,17 +145,16 @@ public class SendFile extends Service {
                     OutputStream outputStream = socket.getOutputStream();
                     DataOutputStream dos = new DataOutputStream(outputStream);
                     Log.d(LOG_TAG,params[0].getPath());
-                    Log.d(LOG_TAG,params[0].getLastPathSegment().substring(params[0].getPath().lastIndexOf("/")));
+                    Log.d(LOG_TAG, params[0].getLastPathSegment().substring(params[0].getPath().lastIndexOf("/")));
 
-                    dos.writeUTF(params[0].getLastPathSegment() + "\n");
-                    dos.writeUTF(MainActivity.teacherMacAddress + "\n");
+                    //dos.writeUTF("answers of Student : " + manager.g  +"\n");
 
                     if (sendFile(inputStream, outputStream)) {
-                        Log.d(LOG_TAG, "File Sent to " + currentStudent);
+                        Log.d(LOG_TAG, "File Sent to " + currentTeacher);
                         sentFile = true;
                         fileCopied = true;
                     } else {
-                        Log.d(LOG_TAG, "File Not Sent to " + currentStudent);
+                        Log.d(LOG_TAG, "File Not Sent to " + currentTeacher);
                         sentFile = true;
                     }
 
@@ -188,7 +191,6 @@ public class SendFile extends Service {
         @Override
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
-            //MainActivity.
             if (fileCopied)
                 Toast.makeText(getApplicationContext(), "File Sent", Toast.LENGTH_SHORT).show();
             else

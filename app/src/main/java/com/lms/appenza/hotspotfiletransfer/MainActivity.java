@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -32,8 +33,9 @@ public class MainActivity extends AppCompatActivity {
     public static Uri uri;
     static WifiManager manager;
     static String studentSSID;
-    Button receiveBtn;
-    TextView waitingForQuiz;
+    static Button receiveBtn;
+    static TextView waitingForQuiz;
+    static String teacherMacAddress;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +45,10 @@ public class MainActivity extends AppCompatActivity {
         receiveBtn = (Button)findViewById(R.id.receiveBtn);
         waitingForQuiz = (TextView) findViewById(R.id.waitForQuizTxt);
         waitingForQuiz.setVisibility(View.INVISIBLE);
+        WifiInfo wifiInfo = manager.getConnectionInfo();
+        teacherMacAddress = wifiInfo.getMacAddress();
+        Log.d(LOG_TAG, "mac address 1: " + teacherMacAddress);
+
     }
 
     public void send(View view) {
@@ -72,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void receive(View view) {
+        teacherMacAddress="00:00:00:00:00:00";
         Intent intent = new Intent(this, ReceiveFile.class);
 
         if(!receiveBtn.getText().toString().contains("Stop")) {
@@ -85,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
             stopService(intent);
             receiveBtn.setText("Start Receiving");
+            waitingForQuiz.setText("Waiting for Quiz ...");
         }
     }
 
