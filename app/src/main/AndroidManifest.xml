@@ -10,7 +10,6 @@
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.ACCESS" />
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -44,15 +43,15 @@
             android:exported="true" >
         </service>
         <service
-            android:name=".Submit"
-            android:enabled="true"
-            android:exported="true" >
-        </service>
-        <service
             android:name=".CollectAnswers"
             android:enabled="true"
             android:exported="true" >
         </service>
+
+        <activity android:name=".CollectAnswers" >
+        </activity>
+        <activity android:name=".SubmitScoreSheet" >
+        </activity>
     </application>
 
 </manifest>

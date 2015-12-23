@@ -5,7 +5,7 @@ public class StudentItem {
     String studentMAC;
     boolean checked;
 
-    public StudentItem(String name, String mac, boolean checked) {
+    public StudentItem(String name, String mac, boolean checked,boolean receivedQuiz) {
         this.studentName = name;
         this.studentMAC = mac;
         this.checked = checked;

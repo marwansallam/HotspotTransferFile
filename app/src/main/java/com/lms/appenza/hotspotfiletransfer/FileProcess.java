@@ -8,7 +8,7 @@ import android.support.annotation.Nullable;
 /**
  * Created by marwansallam on 12/22/15.
  */
-public class FileProcess extends Service{
+public class FileProcess extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {

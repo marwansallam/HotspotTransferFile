@@ -110,4 +110,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void goToSubmit(View view){
+        startActivity(new Intent(this, SubmitScoreSheet.class));
+
+    }
+
 }

@@ -39,5 +39,14 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Go TO Submit"
+        android:onClick="goToSubmit"
+        android:id="@+id/goToSubmitBtn"
+        android:layout_below="@+id/receiveBtn"
+        android:layout_centerHorizontal="true" />
+
 
 </RelativeLayout>

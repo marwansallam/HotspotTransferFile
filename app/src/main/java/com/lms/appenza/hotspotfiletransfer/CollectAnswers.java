@@ -1,61 +1,68 @@
 package com.lms.appenza.hotspotfiletransfer;
 
-import android.app.ProgressDialog;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Environment;
-import android.os.IBinder;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class CollectAnswers extends Service {
-    public CollectAnswers() {
-    }
+public class CollectAnswers extends AppCompatActivity {
     String LOG_TAG = "HOTSPOTMM";
-    ProgressDialog progress;
     WifiManager manager;
     ServerSocket serverSocket = null;
+    boolean answerReceived = false;
+    String QuizName;
+    File quizFile;
+    FileWriter fileWriter;
+    String studentName;
+    TextView studentsSubmittedAnswersTxt,studentsReceivedQuizTxt;
+
     @Override
-    public void onCreate() {
-        super.onCreate();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_collect_answers);
+        studentsReceivedQuizTxt = (TextView)findViewById(R.id.srqShowTxt);
+        studentsSubmittedAnswersTxt = (TextView)findViewById(R.id.ssaShowTxt);
         manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         WifiConfiguration netConfig = new WifiConfiguration();
         netConfig.SSID = MainActivity.studentSSID;
         Log.d(LOG_TAG, netConfig.SSID + "--- this is SSID");
         netConfig.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
         setWifiApEnabled(netConfig, true);
+        QuizName = "Quiz1.txt";
+        quizFile = new File(Environment.getExternalStorageDirectory() + "/QuizzesAnswers/" + QuizName);
+        try {
+            File dirs = new File(quizFile.getParent());
+            if (!dirs.exists())
+                dirs.mkdirs();
+            if (quizFile.createNewFile())
+                Log.d(LOG_TAG, "file created");
+            else
+                Log.d(LOG_TAG, "file not created");
+
+            fileWriter = new FileWriter(quizFile);
+            fileWriter.append("This is a test :) " + System.getProperty("line.separator"));
+            fileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         new FileServerTask().execute();
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public boolean setWifiApEnabled(WifiConfiguration wifiConfig, boolean enabled) {
@@ -71,33 +78,6 @@ public class CollectAnswers extends Service {
         }
     }
 
-    @Override
-    public boolean stopService(Intent name) {
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        setWifiApEnabled(null, false);
-        Log.d(LOG_TAG,"Stoping service");
-        this.stopSelf();
-        this.onDestroy();
-        return super.stopService(name);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        setWifiApEnabled(null, false);
-        Log.d(LOG_TAG,"Stoping service");
-        this.stopSelf();
-    }
-
     private class FileServerTask extends AsyncTask<Void, Void, File> {
 
         public static final String LOG_TAG = "HOTSPOTMM server";
@@ -106,88 +86,65 @@ public class CollectAnswers extends Service {
         protected File doInBackground(Void... params) {
             try {
                 serverSocket = new ServerSocket(8000);
-                Log.d(LOG_TAG, "Server: socket opened");
-                Socket client = serverSocket.accept();
-                Log.d(LOG_TAG, manager.getDhcpInfo().toString());
-                Log.d(LOG_TAG, "Manager All Info : " + manager.toString());
-
-                InputStream inputStream = client.getInputStream();
-                DataInputStream dis = new DataInputStream(inputStream);
-                //String fileName = dis.readUTF();
-                BufferedOutputStream put=new BufferedOutputStream(client.getOutputStream());
-                BufferedReader st=new BufferedReader(new InputStreamReader(client.getInputStream()));
-                String s=st.readLine();
-                MainActivity.teacherMacAddress=st.readLine();
-                Log.d(LOG_TAG, "Teacher Mac Address: " + MainActivity.teacherMacAddress);
-
-//                int splitIndex = s.indexOf("@");
-//                String fileName = s.substring(0,splitIndex);
-
-                // String fileName = dis.readLine();
-                File file = new File(Environment.getExternalStorageDirectory() + "/HotspotSharedFiles/" + s);
-                Log.d(LOG_TAG,"Filename is : " + s);
-                File dirs = new File(file.getParent());
-                if (!dirs.exists())
-                    dirs.mkdirs();
-                if (file.createNewFile())
-                    Log.d(LOG_TAG, "file created");
-                else
-                    Log.d(LOG_TAG, "file not created");
-
-                OutputStream outputStream = new FileOutputStream(file);
-
-                if (copyFile(inputStream, outputStream)) {
-                    Log.d(LOG_TAG, "File received");
-
-                } else {
-                    Log.d(LOG_TAG, "File not copied");
-                }
-                client.close();
-                serverSocket.close();
-                Log.d(LOG_TAG, "Server Conn closed");
-                return file;
-
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.e(LOG_TAG, e.toString());
             }
-            return null;
+            while (true) {
+                try {
 
-        }
+                    Log.d(LOG_TAG, "Server: socket opened");
+                    Socket client = null;
+                    client = serverSocket.accept();
+                    BufferedReader st = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                    String temp ;
+                    String studentAnswer="";
+                   if(st.readLine().contains("StartOfText")) {
+                       while (true) {
+                           temp = st.readLine();
+                           Log.d(LOG_TAG, temp);
 
-        private boolean copyFile(InputStream inputStream, OutputStream out) {
-            byte[] buf = new byte[1024];
-            int len;
-            try {
-                while ((len = inputStream.read(buf)) != -1) {
-                    out.write(buf, 0, len);
+                           if (temp.contains("EndOfText")) {
+                               Log.d(LOG_TAG, temp);
+                               answerReceived = true;
+                               break;
+                           }
+                           studentAnswer += temp;
+
+                       }
+                       Log.d(LOG_TAG, "Student Answer : " + studentAnswer);
+
+                       fileWriter.append("Student Answer <" + studentAnswer + ">" + System.getProperty("line.separator"));
+                   }
+                    client.close();
+                    serverSocket.close();
+                    Log.d(LOG_TAG, "Server Conn closed");
+                    return quizFile;
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e(LOG_TAG, e.toString());
                 }
-                out.close();
-                inputStream.close();
-            } catch (IOException e) {
-                Log.d(LOG_TAG, e.toString());
-                return false;
+                return null;
             }
-            return true;
         }
+
+
         @Override
         protected void onPostExecute(File f) {
-//            Log.d(LOG_TAG, "File Uri: " + Uri.fromFile(f));
 
             MainActivity.waitingForQuiz.setVisibility(View.INVISIBLE);
-            Toast.makeText(getApplicationContext(), "Teacher MAC : " + MainActivity.teacherMacAddress, Toast.LENGTH_SHORT).show();
-
-            Toast.makeText(getApplicationContext(), "Quiz Received", Toast.LENGTH_SHORT).show();
-
-            MainActivity.receiveBtn.setText("Start Receiving");
+            if (answerReceived) {
+                studentsSubmittedAnswersTxt.append(studentName + " has submitted the answers successfully ");
+                Toast.makeText(getApplicationContext(), "Received Answers from : " +studentName, Toast.LENGTH_SHORT).show();
+            }
 
             if (f != null) {
                 Log.d(LOG_TAG, this.getStatus().toString() + "---- Stopping Service !!!!!");
                 setWifiApEnabled(null, false);
-                stopSelf();
 
             }
         }
 
     }
 }
+

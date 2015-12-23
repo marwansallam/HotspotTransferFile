@@ -15,8 +15,6 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +34,7 @@ public class SendFile extends Service {
     int netId;
     Map<String, String> json = new HashMap<>();
     String currentStudent;
-    Boolean sentFile,networkConnected =false;
+    Boolean sentFile, networkConnected = false;
     public static boolean isSending = true;
 
     public SendFile() {
@@ -70,7 +68,7 @@ public class SendFile extends Service {
     }
 
 
-    public void startSendingFile(){
+    public void startSendingFile() {
         for (int i = 0; i < scanResults.size(); i++) {
             if (checkedStudents.contains(scanResults.get(i).BSSID)) {
                 Log.d(LOG_TAG, "Found Student : " + scanResults.get(i));
@@ -97,10 +95,10 @@ public class SendFile extends Service {
                 Log.d(LOG_TAG, isWifiConnected + " Connected to " + conf.SSID);
 
                 Log.d(LOG_TAG, "--------------------Sending File Started -----------------");
-                if(isWifiConnected)
-                    for(Map.Entry entry: json.entrySet()){
-                        if(scanResults.get(i).BSSID.equals(entry.getValue()))
-                            currentStudent=entry.getKey().toString();
+                if (isWifiConnected)
+                    for (Map.Entry entry : json.entrySet()) {
+                        if (scanResults.get(i).BSSID.equals(entry.getValue()))
+                            currentStudent = entry.getKey().toString();
                     }
                 Log.d(LOG_TAG, "Sending file to ----- " + currentStudent);
 
@@ -117,8 +115,9 @@ public class SendFile extends Service {
     private class ClientTask extends AsyncTask<Uri, Void, Void> {
         private boolean isConencted = false;
         boolean fileCopied = false;
-        Socket socket ;
-        int ctr=30;
+        Socket socket;
+        int ctr = 30;
+
         @Override
         protected Void doInBackground(Uri... params) {
             Context context = getApplicationContext();
@@ -140,8 +139,8 @@ public class SendFile extends Service {
 
                     OutputStream outputStream = socket.getOutputStream();
                     DataOutputStream dos = new DataOutputStream(outputStream);
-                    Log.d(LOG_TAG,params[0].getPath());
-                    Log.d(LOG_TAG,params[0].getLastPathSegment().substring(params[0].getPath().lastIndexOf("/")));
+                    Log.d(LOG_TAG, params[0].getPath());
+                    Log.d(LOG_TAG, params[0].getLastPathSegment().substring(params[0].getPath().lastIndexOf("/")));
 
                     dos.writeUTF(params[0].getLastPathSegment() + "\n");
                     dos.writeUTF(MainActivity.teacherMacAddress + "\n");
@@ -170,10 +169,10 @@ public class SendFile extends Service {
         }
 
         private boolean sendFile(InputStream inputStream, OutputStream out) {
-            byte []buf = new byte[1024];
-            int len=0;
+            byte[] buf = new byte[1024];
+            int len = 0;
             try {
-                while ((len = inputStream.read(buf,0,1024)) != -1) {
+                while ((len = inputStream.read(buf, 0, 1024)) != -1) {
                     out.write(buf, 0, len);
                 }
                 out.close();
@@ -193,8 +192,8 @@ public class SendFile extends Service {
                 Toast.makeText(getApplicationContext(), "File Sent", Toast.LENGTH_SHORT).show();
             else
                 Toast.makeText(getApplicationContext(), "File Not Sent", Toast.LENGTH_SHORT).show();
-            fileCopied=false;
-            isSending=false;
+            fileCopied = false;
+            isSending = false;
         }
     }
 

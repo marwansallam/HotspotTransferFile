@@ -4,8 +4,6 @@ import android.app.ProgressDialog;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
@@ -13,6 +11,7 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedOutputStream;
@@ -31,10 +30,13 @@ import java.net.Socket;
 public class ReceiveFile extends Service {
     public ReceiveFile() {
     }
+
     String LOG_TAG = "HOTSPOTMM";
     ProgressDialog progress;
     WifiManager manager;
     ServerSocket serverSocket = null;
+    boolean fileReceived =false;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -79,7 +81,7 @@ public class ReceiveFile extends Service {
             e.printStackTrace();
         }
         setWifiApEnabled(null, false);
-        Log.d(LOG_TAG,"Stoping service");
+        Log.d(LOG_TAG, "Stoping service");
         this.stopSelf();
         this.onDestroy();
         return super.stopService(name);
@@ -94,7 +96,7 @@ public class ReceiveFile extends Service {
             e.printStackTrace();
         }
         setWifiApEnabled(null, false);
-        Log.d(LOG_TAG,"Stoping service");
+        Log.d(LOG_TAG, "Stoping service");
         this.stopSelf();
     }
 
@@ -114,18 +116,18 @@ public class ReceiveFile extends Service {
                 InputStream inputStream = client.getInputStream();
                 DataInputStream dis = new DataInputStream(inputStream);
                 //String fileName = dis.readUTF();
-                BufferedOutputStream put=new BufferedOutputStream(client.getOutputStream());
-                BufferedReader st=new BufferedReader(new InputStreamReader(client.getInputStream()));
-                String s=st.readLine();
-                MainActivity.teacherMacAddress=st.readLine();
+                BufferedOutputStream put = new BufferedOutputStream(client.getOutputStream());
+                BufferedReader st = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                String s = st.readLine();
+                MainActivity.teacherMacAddress = st.readLine();
                 Log.d(LOG_TAG, "Teacher Mac Address: " + MainActivity.teacherMacAddress);
 
 //                int splitIndex = s.indexOf("@");
 //                String fileName = s.substring(0,splitIndex);
 
-               // String fileName = dis.readLine();
+                // String fileName = dis.readLine();
                 File file = new File(Environment.getExternalStorageDirectory() + "/HotspotSharedFiles/" + s);
-                Log.d(LOG_TAG,"Filename is : " + s);
+                Log.d(LOG_TAG, "Filename is : " + s);
                 File dirs = new File(file.getParent());
                 if (!dirs.exists())
                     dirs.mkdirs();
@@ -170,21 +172,22 @@ public class ReceiveFile extends Service {
             }
             return true;
         }
+
         @Override
         protected void onPostExecute(File f) {
 //            Log.d(LOG_TAG, "File Uri: " + Uri.fromFile(f));
 
             MainActivity.waitingForQuiz.setVisibility(View.INVISIBLE);
-            Toast.makeText(getApplicationContext(), "Teacher MAC : " + MainActivity.teacherMacAddress, Toast.LENGTH_SHORT).show();
-
-            Toast.makeText(getApplicationContext(), "Quiz Received", Toast.LENGTH_SHORT).show();
-
+            if(fileReceived) {
+                Toast.makeText(getApplicationContext(), "Teacher MAC : " + MainActivity.teacherMacAddress, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Quiz Received", Toast.LENGTH_SHORT).show();
+            }
             MainActivity.receiveBtn.setText("Start Receiving");
 
             if (f != null) {
                 Log.d(LOG_TAG, this.getStatus().toString() + "---- Stopping Service !!!!!");
                 setWifiApEnabled(null, false);
-                  stopSelf();
+                stopSelf();
 
             }
         }
